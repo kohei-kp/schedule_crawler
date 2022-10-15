@@ -48,6 +48,9 @@ fn fetch_schedule_for_axelight() -> Vec<Schedule> {
         nums.push((pages * 10).to_string());
         pages += 1;
     }
+    if (nums.len() == 0) {
+        nums.push("0".to_string())
+    }
 
     let mut schedules: Vec<Schedule> = vec![];
 
@@ -95,6 +98,9 @@ fn fetch_schedule_for_kolokol() -> Vec<Schedule> {
 
         nums.push((pages * 10).to_string());
         pages += 1;
+    }
+    if (nums.len() == 0) {
+        nums.push("0".to_string())
     }
 
     let mut schedules: Vec<Schedule> = vec![];
