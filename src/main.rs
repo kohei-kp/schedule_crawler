@@ -11,7 +11,7 @@ use std::time::Duration;
 const INTERVAL: u64 = 1000 * 1;
 const AXELIGHT_URL: &str = "https://axelight-official.com/schedule/index/num/";
 const KOLOKOL_URL: &str = "https://kolokol-official.com/schedule/index/num/";
-const QUUBI_URL: &str = "https://quubi.jp/schedule/";
+const QUUBI_URL: &str = "https://quubi.jp/schedule/index/num/";
 
 struct Schedule {
     date: String,
@@ -133,24 +133,50 @@ fn fetch_schedule_for_kolokol() -> Vec<Schedule> {
 }
 
 fn fetch_schedule_for_quubi() -> Vec<Schedule> {
-    let html = fetch_html(QUUBI_URL.to_string()).unwrap();
+    let html = fetch_html(String::from(QUUBI_URL) + "0").unwrap();
     let document = Html::parse_document(&html);
-    let selector = Selector::parse(".record-list2 li").unwrap();
+    let pager_selector = Selector::parse(".pagerSec > ul > li").unwrap();
+
+    let mut pages = 0;
+    let mut nums = vec![];
+
+    // >が現れるまでをカウントしてページ数とする
+    for element in document.select(&pager_selector) {
+        let a = element.text().collect::<Vec<_>>();
+        if a[0] == ">" {
+            break;
+        }
+
+        nums.push((pages * 10).to_string());
+        pages += 1;
+    }
+    if (nums.len() == 0) {
+        nums.push("0".to_string())
+    }
+
     let mut schedules: Vec<Schedule> = vec![];
 
-    for element in document.select(&selector) {
-        let texts = element.text().collect::<Vec<_>>();
-        let schedule = Schedule {
-            date: texts[1].to_string(),
-            day_of_week: texts[2].to_string(),
-            place: texts[5].to_string(),
-            title: texts[7].to_string(),
-        };
-        println!("Date: {}{}", texts[1], texts[2]);
-        println!("Place: {}", texts[5]);
-        println!("Title: {}", texts[7]);
-        println!("-------------------------------------------------------------------");
-        schedules.push(schedule);
+    for num in nums {
+        // 連続アクセスしないようにする。
+        sleep(Duration::from_millis(INTERVAL));
+        let url = String::from(QUUBI_URL) + &num;
+        let html = fetch_html(url).unwrap();
+        let document = Html::parse_document(&html);
+        let selector = Selector::parse(".record-list2 li").unwrap();
+        for element in document.select(&selector) {
+            let texts = element.text().collect::<Vec<_>>();
+            let schedule = Schedule {
+                date: texts[1].to_string(),
+                day_of_week: texts[2].to_string(),
+                place: texts[5].to_string(),
+                title: texts[7].to_string(),
+            };
+            println!("Date: {}{}", texts[1], texts[2]);
+            println!("Place: {}", texts[5]);
+            println!("Title: {}", texts[7]);
+            println!("-------------------------------------------------------------------");
+            schedules.push(schedule);
+        }
     }
 
     return schedules;
