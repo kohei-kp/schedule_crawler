@@ -18,6 +18,7 @@ struct Schedule {
     day_of_week: String,
     place: String,
     title: String,
+    url: String,
 }
 
 struct Schedules {
@@ -69,6 +70,8 @@ fn fetch_schedule_for_axelight() -> Vec<Schedule> {
                 day_of_week: texts[3].to_string(),
                 place: texts[6].to_string(),
                 title: texts[8].to_string(),
+                url: String::from("https://axelight-official.com/schedule/detail/index/")
+                    + &element.value().id().unwrap(),
             };
             schedules.push(schedule);
             println!("Date: {} {}", texts[2], texts[3]);
@@ -119,6 +122,7 @@ fn fetch_schedule_for_kolokol() -> Vec<Schedule> {
                 day_of_week: texts[4].to_string(),
                 place: texts[16].to_string(),
                 title: texts[14].to_string(),
+                url: texts[28].to_string(),
             };
             println!("Date: {} {}", texts[3], texts[4]);
             println!("Place: {}", texts[16]);
@@ -170,12 +174,20 @@ fn fetch_schedule_for_quubi() -> Vec<Schedule> {
                 day_of_week: texts[2].to_string(),
                 place: texts[5].to_string(),
                 title: texts[7].to_string(),
+                url: String::from(""),
             };
             println!("Date: {}{}", texts[1], texts[2]);
             println!("Place: {}", texts[5]);
             println!("Title: {}", texts[7]);
             println!("-------------------------------------------------------------------");
             schedules.push(schedule);
+        }
+        let href_selector = Selector::parse(".record-list2 li > a").unwrap();
+        let mut i = 0;
+        for element in document.select(&href_selector) {
+            let url = element.value().attr("href").unwrap();
+            schedules[i].url = url.to_string();
+            i += 1;
         }
     }
 
@@ -219,7 +231,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         .into_iter()
         .map(|s| {
             let date = String::from(s.date) + &s.day_of_week;
-            vec![date, s.place, s.title]
+            vec![date, s.place, s.title, s.url]
         })
         .collect();
     let num = rows.len();
@@ -230,7 +242,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         values: Some(rows),
     };
 
-    let range = String::from("A3:C") + &(num + 2).to_string();
+    let range = String::from("A3:D") + &(num + 2).to_string();
 
     let result = hub
         .spreadsheets()
@@ -247,7 +259,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         .into_iter()
         .map(|s| {
             let date = String::from(s.date) + &s.day_of_week;
-            vec![date, s.place, s.title]
+            vec![date, s.place, s.title, s.url]
         })
         .collect();
     let num2 = rows2.len();
@@ -258,7 +270,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         values: Some(rows2),
     };
 
-    let range2 = String::from("D3:F") + &(num2 + 2).to_string();
+    let range2 = String::from("E3:H") + &(num2 + 2).to_string();
     let result2 = hub
         .spreadsheets()
         .values_update(req2, sheet_id, &range2)
@@ -274,7 +286,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         .into_iter()
         .map(|s| {
             let date = String::from(s.date) + &s.day_of_week;
-            vec![date, s.place, s.title]
+            vec![date, s.place, s.title, s.url]
         })
         .collect();
     let num3 = rows3.len();
@@ -284,7 +296,7 @@ async fn write_schedule(schedules: Schedules, sheet_id: &str) {
         major_dimension: Some("ROWS".to_string()),
         values: Some(rows3),
     };
-    let range3 = String::from("G3:I") + &(num3 + 2).to_string();
+    let range3 = String::from("I3:L") + &(num3 + 2).to_string();
     let result3 = hub
         .spreadsheets()
         .values_update(req3, sheet_id, &range3)
